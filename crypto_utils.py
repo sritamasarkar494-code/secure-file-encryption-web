@@ -4,7 +4,12 @@ from cryptography.hazmat.primitives.kdf.pbkdf2 import PBKDF2HMAC
 from cryptography.hazmat.primitives import hashes
 from cryptography.hazmat.primitives.ciphers.aead import AESGCM
 
-ITERATIONS = 100_000
+# 🔐 Professional iteration count
+ITERATIONS = 600_000
+
+# 🔐 File format identifier (4 bytes)
+FILE_SIGNATURE = b"SFE1"
+
 
 def derive_key(password: bytes, salt: bytes) -> bytes:
     kdf = PBKDF2HMAC(
@@ -15,6 +20,7 @@ def derive_key(password: bytes, salt: bytes) -> bytes:
     )
     return kdf.derive(password)
 
+
 def encrypt_data(data: bytes, password: bytes) -> bytes:
     salt = os.urandom(16)
     key = derive_key(password, salt)
@@ -23,14 +29,27 @@ def encrypt_data(data: bytes, password: bytes) -> bytes:
     aesgcm = AESGCM(key)
 
     ciphertext = aesgcm.encrypt(nonce, data, None)
-    encrypted = salt + nonce + ciphertext
 
-    # 🔑 BASE64 ADDED HERE
-    return base64.b64encode(encrypted)
+    # 🔐 Structure:
+    # [SIGNATURE][SALT][NONCE][CIPHERTEXT]
+    final_data = FILE_SIGNATURE + salt + nonce + ciphertext
+
+    # 🔑 Encode to base64 for safe file transport
+    return base64.b64encode(final_data)
+
 
 def decrypt_data(data: bytes, password: bytes) -> bytes:
-    # 🔑 BASE64 REMOVED HERE
-    raw = base64.b64decode(data)
+    try:
+        # 🔑 Decode base64
+        raw = base64.b64decode(data)
+    except Exception:
+        raise ValueError("Invalid file encoding")
+
+    # 🔐 Validate signature
+    if not raw.startswith(FILE_SIGNATURE):
+        raise ValueError("Invalid file format")
+
+    raw = raw[4:]  # remove signature
 
     salt = raw[:16]
     nonce = raw[16:28]
