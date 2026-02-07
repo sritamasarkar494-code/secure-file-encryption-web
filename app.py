@@ -96,5 +96,6 @@ def decrypt():
 
     return render_template("decrypt.html")
 if __name__ == "__main__":
-    app.run(debug=True)
+    app.run()
+
 
