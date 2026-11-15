@@ -1,0 +1,222 @@
+{% extends "base.html" %}
+
+{% block content %}
+
+<div class="container admin-container">
+
+    <h1>
+        👑 Administrator Panel
+    </h1>
+
+    <p>
+        Organization-wide system overview and security management.
+    </p>
+
+
+    <h2>
+        System Overview
+    </h2>
+
+    <div class="admin-stats">
+
+        <div class="stat-card">
+
+            <h3>
+                {{ user_count }}
+            </h3>
+
+            <p>
+                Organization Users
+            </p>
+
+        </div>
+
+
+        <div class="stat-card">
+
+            <h3>
+                {{ file_count }}
+            </h3>
+
+            <p>
+                Organization Files
+            </p>
+
+        </div>
+
+
+        <div class="stat-card">
+
+            <h3>
+                {{ log_count }}
+            </h3>
+
+            <p>
+                Security Events
+            </p>
+
+        </div>
+
+    </div>
+
+
+    <p class="small-text">
+
+        Personal workspaces and personal files are private
+        and are not included in this administrator panel.
+
+    </p>
+
+
+    <h2>
+        Organization Users & Security Status
+    </h2>
+
+    <div class="table-wrapper">
+
+        <table>
+
+            <tr>
+
+                <th>ID</th>
+                <th>Username</th>
+                <th>Email</th>
+                <th>Role</th>
+                <th>Failed Attempts</th>
+                <th>Account Status</th>
+                <th>Registered On</th>
+
+            </tr>
+
+
+            {% for user in users %}
+
+            <tr>
+
+                <td>
+                    {{ user.id }}
+                </td>
+
+                <td>
+                    {{ user.username }}
+                </td>
+
+                <td>
+                    {{ user.email }}
+                </td>
+
+                <td>
+                    {{ user.role }}
+                </td>
+
+                <td>
+                    {{ user.failed_login_attempts }}
+                </td>
+
+                <td>
+
+                    {% if user.locked_until %}
+
+                        <span class="status-locked">
+
+                            🔒 Locked until
+                            {{ user.locked_until }}
+
+                        </span>
+
+                    {% else %}
+
+                        <span class="status-active">
+
+                            ✅ Active
+
+                        </span>
+
+                    {% endif %}
+
+                </td>
+
+                <td>
+                    {{ user.created_at }}
+                </td>
+
+            </tr>
+
+            {% endfor %}
+
+        </table>
+
+    </div>
+
+
+    <h2>
+        Organization File Records
+    </h2>
+
+    <div class="table-wrapper">
+
+        <table>
+
+            <tr>
+
+                <th>File Name</th>
+                <th>Owner</th>
+                <th>Access Expiry</th>
+                <th>Created On</th>
+
+            </tr>
+
+
+            {% for file in files %}
+
+            <tr>
+
+                <td>
+                    {{ file.original_filename }}
+                </td>
+
+                <td>
+                    {{ file.owner_name }}
+                </td>
+
+                <td>
+
+                    {% if file.expiry_date %}
+
+                        {{ file.expiry_date }}
+
+                    {% else %}
+
+                        No expiry
+
+                    {% endif %}
+
+                </td>
+
+                <td>
+                    {{ file.created_at }}
+                </td>
+
+            </tr>
+
+            {% endfor %}
+
+        </table>
+
+    </div>
+
+
+    <div class="admin-actions">
+
+        <a
+            href="{{ url_for('audit_logs') }}"
+            class="nav-link"
+        >
+            📋 View Organization Audit Logs
+        </a>
+
+    </div>
+
+</div>
+
+{% endblock %}

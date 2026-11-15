@@ -1,0 +1,73 @@
+{% extends "base.html" %}
+
+{% block content %}
+
+<div class="container">
+
+    <h1>
+        🔐 Access Your Secure File
+    </h1>
+
+    <p>
+        A secure file has been shared with your
+        email address.
+    </p>
+
+    <p class="small-text">
+
+        Registering as:
+
+        <strong>
+            {{ invited_email }}
+        </strong>
+
+    </p>
+
+
+    <form method="POST">
+
+        <label>
+            Choose a Username
+        </label>
+
+        <input
+            type="text"
+            name="username"
+            placeholder="Username"
+            required
+        >
+
+
+        <label>
+            Create a Password
+        </label>
+
+        <input
+            type="password"
+            name="password"
+            placeholder="At least 8 characters"
+            required
+        >
+
+
+        <button type="submit">
+
+            Create Account & Access File
+
+        </button>
+
+    </form>
+
+
+    <p class="small-text">
+
+        Your account will be created as an
+        independent user. After registration,
+        you will automatically receive access
+        to your shared file.
+
+    </p>
+
+</div>
+
+{% endblock %}

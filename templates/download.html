@@ -1,0 +1,35 @@
+{% extends "base.html" %}
+
+{% block content %}
+
+<div class="container">
+
+    <h1>🔓 Secure File Access</h1>
+
+    <h3>
+        {{ file.original_filename }}
+    </h3>
+
+    <p>
+        To decrypt this file, enter your account
+        password to unlock your protected private key.
+    </p>
+
+    <form method="POST">
+
+        <input
+            type="password"
+            name="password"
+            placeholder="Account Password"
+            required
+        >
+
+        <button type="submit">
+            Decrypt & Download
+        </button>
+
+    </form>
+
+</div>
+
+{% endblock %}

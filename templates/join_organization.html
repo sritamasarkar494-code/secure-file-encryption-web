@@ -1,0 +1,61 @@
+{% extends "base.html" %}
+
+{% block content %}
+
+<div class="container">
+
+    <h1>
+        🏢 Join {{ invitation.organization_name }}
+    </h1>
+
+    <p>
+        You have been invited to join this organization
+        on SecureShare.
+    </p>
+
+    <p class="small-text">
+
+        Registering with:
+
+        <strong>
+            {{ invitation.email }}
+        </strong>
+
+    </p>
+
+
+    <form method="POST">
+
+        <label>
+            Choose a Username
+        </label>
+
+        <input
+            type="text"
+            name="username"
+            placeholder="Username"
+            required
+        >
+
+
+        <label>
+            Create a Password
+        </label>
+
+        <input
+            type="password"
+            name="password"
+            placeholder="At least 8 characters"
+            required
+        >
+
+
+        <button type="submit">
+            Join Organization
+        </button>
+
+    </form>
+
+</div>
+
+{% endblock %}

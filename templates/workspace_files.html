@@ -1,0 +1,143 @@
+{% extends "base.html" %}
+
+{% block content %}
+
+<div class="container">
+
+    <h1>
+
+        {% if workspace_type == "organization" %}
+            🏢
+        {% else %}
+            👤
+        {% endif %}
+
+        {{ workspace_name }}
+
+    </h1>
+
+
+    {% if workspace_type == "organization" %}
+
+        <p>
+            Files in this workspace are used for
+            authorized organization collaboration.
+        </p>
+
+    {% else %}
+
+        <p>
+            Your personal files are separate from your
+            organization workspace and are not visible
+            to the organization administrator.
+        </p>
+
+    {% endif %}
+
+
+    <a
+        href="{{ url_for(
+            'upload',
+            workspace_type=workspace_type
+        ) }}"
+        class="primary-button"
+    >
+        🔐 Share a File
+    </a>
+
+
+    <h2>
+        Your Accessible Files
+    </h2>
+
+
+    {% if files %}
+
+        <div class="table-wrapper">
+
+            <table>
+
+                <tr>
+
+                    <th>
+                        File
+                    </th>
+
+                    <th>
+                        Owner
+                    </th>
+
+                    <th>
+                        Access Expiry
+                    </th>
+
+                    <th>
+                        Action
+                    </th>
+
+                </tr>
+
+
+                {% for file in files %}
+
+                <tr>
+
+                    <td>
+                        {{ file.original_filename }}
+                    </td>
+
+                    <td>
+                        {{ file.owner_name }}
+                    </td>
+
+                    <td>
+
+                        {% if file.expiry_date %}
+
+                            {{ file.expiry_date }}
+
+                        {% else %}
+
+                            No expiry
+
+                        {% endif %}
+
+                    </td>
+
+                    <td>
+
+                        <a
+                            href="{{ url_for(
+                                'download',
+                                file_id=file.id
+                            ) }}"
+                            class="action-link"
+                        >
+                            Access Securely
+                        </a>
+
+                    </td>
+
+                </tr>
+
+                {% endfor %}
+
+            </table>
+
+        </div>
+
+    {% else %}
+
+        <div class="empty-state">
+
+            <p>
+                No files are currently available.
+            </p>
+
+        </div>
+
+    {% endif %}
+
+</div>
+
+{% endblock %}

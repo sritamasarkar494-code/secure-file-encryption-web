@@ -1,0 +1,74 @@
+{% extends "base.html" %}
+
+{% block content %}
+
+<div class="container">
+
+    <h1>
+        📨 Invite Organization Users
+    </h1>
+
+    <p>
+        Invite employees to securely join your
+        organization workspace.
+    </p>
+
+
+    <form
+        method="POST"
+        enctype="multipart/form-data"
+    >
+
+        <label>
+            Enter Email Addresses
+        </label>
+
+        <textarea
+            name="emails"
+            placeholder="employee1@example.com, employee2@example.com"
+            rows="4"
+        ></textarea>
+
+
+        <p class="small-text">
+            Separate multiple email addresses with commas.
+        </p>
+
+
+        <label>
+            Or Upload a CSV File
+        </label>
+
+        <input
+            type="file"
+            name="email_file"
+            accept=".csv"
+        >
+
+
+        <p class="small-text">
+            The first column of the CSV should contain
+            employee email addresses.
+        </p>
+
+
+        <button type="submit">
+            Send Invitations
+        </button>
+
+    </form>
+
+
+    <p>
+
+        <a
+            href="{{ url_for('admin_panel') }}"
+        >
+            ← Back to Admin Panel
+        </a>
+
+    </p>
+
+</div>
+
+{% endblock %}

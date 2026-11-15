@@ -1,0 +1,101 @@
+{% extends "base.html" %}
+
+{% block content %}
+
+<div class="container">
+
+    {% if workspace_type == "organization" %}
+
+        <h1>
+            🏢 Share Organization File
+        </h1>
+
+        <p>
+            This file can only be shared with authorized
+            members of your organization.
+        </p>
+
+    {% else %}
+
+        <h1>
+            🔐 Share Personal File
+        </h1>
+
+        <p>
+            This file belongs to your personal workspace.
+            Your organization administrator cannot view it.
+        </p>
+
+    {% endif %}
+
+
+    <form method="POST" enctype="multipart/form-data">
+
+        <label>
+            Select File
+        </label>
+
+        <input
+            type="file"
+            name="file"
+            required
+        >
+
+
+        <label>
+            Recipient Email Address
+            <span>
+                (separate multiple email addresses with commas)
+            </span>
+        </label>
+
+        <input
+            type="text"
+            name="recipients"
+            placeholder="person@example.com"
+            required
+        >
+
+
+        <label>
+            Access Expiry Date and Time (Optional)
+        </label>
+
+        <input
+            type="datetime-local"
+            name="expiry_date"
+        >
+
+
+        <button type="submit">
+
+            {% if workspace_type == "organization" %}
+
+                🏢 Encrypt & Share with Organization
+
+            {% else %}
+
+                🔐 Encrypt & Share Privately
+
+            {% endif %}
+
+        </button>
+
+    </form>
+
+
+    {% if workspace_type == "personal" %}
+
+        <p class="small-text">
+
+            If the recipient does not have an account,
+            SecureShare will send an invitation to their
+            email address.
+
+        </p>
+
+    {% endif %}
+
+</div>
+
+{% endblock %}

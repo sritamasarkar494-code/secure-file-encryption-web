@@ -1,0 +1,95 @@
+{% extends "base.html" %}
+
+{% block content %}
+
+<div class="hero">
+
+    <h1>
+        Secure File Sharing
+    </h1>
+
+    <p>
+        Protect your files using hybrid encryption,
+        secure access control, and privacy-focused
+        collaboration.
+    </p>
+
+</div>
+
+
+<div class="choice-grid">
+
+    <div class="choice-card">
+
+        <div class="choice-icon">
+            🏢
+        </div>
+
+        <h2>
+            Join an Organization
+        </h2>
+
+        <p>
+            Join securely using an invitation
+            received from your organization.
+        </p>
+
+        <p class="small-text">
+
+            <strong>
+                Invitation required.
+            </strong>
+
+            <br><br>
+
+            Use the secure registration link
+            sent to your email.
+
+        </p>
+
+    </div>
+
+
+    <div class="choice-card">
+
+        <div class="choice-icon">
+            👤
+        </div>
+
+        <h2>
+            Use Independently
+        </h2>
+
+        <p>
+            Create your own private account for
+            secure personal file sharing.
+        </p>
+
+        <a
+            href="{{ url_for('register_independent') }}"
+            class="primary-button"
+        >
+            Create Independent Account
+        </a>
+
+    </div>
+
+</div>
+
+
+<div class="login-section">
+
+    <p>
+        Already have an account?
+    </p>
+
+    <a
+        href="{{ url_for('login') }}"
+        class="secondary-button"
+    >
+        Log In
+    </a>
+
+</div>
+
+{% endblock %}

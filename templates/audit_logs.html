@@ -1,0 +1,75 @@
+{% extends "base.html" %}
+
+{% block content %}
+
+<div class="container">
+
+    <h1>📋 Organization Security Audit Logs</h1>
+
+    <p>
+        Monitor important security events and activities
+        within your organization.
+    </p>
+
+    <p class="small-text">
+        Personal independent account activity is private and
+        is not included in these organization audit logs.
+    </p>
+
+    {% if logs %}
+
+        <div class="table-wrapper">
+
+            <table>
+
+                <tr>
+                    <th>User</th>
+                    <th>Security Event</th>
+                    <th>Details</th>
+                    <th>Time</th>
+                </tr>
+
+                {% for log in logs %}
+
+                <tr>
+
+                    <td>
+                        {{ log.username or "Unknown" }}
+                    </td>
+
+                    <td>
+                        {{ log.action }}
+                    </td>
+
+                    <td>
+                        {{ log.details or "-" }}
+                    </td>
+
+                    <td>
+                        {{ log.created_at }}
+                    </td>
+
+                </tr>
+
+                {% endfor %}
+
+            </table>
+
+        </div>
+
+    {% else %}
+
+        <div class="empty-state">
+
+            <p>
+                No organization security events have been
+                recorded yet.
+            </p>
+
+        </div>
+
+    {% endif %}
+
+</div>
+
+{% endblock %}
