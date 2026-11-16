@@ -1,15 +1,7 @@
-import os
 
-from dotenv import load_dotenv
+from werkzeug.security import generate_password_hash
 
-from werkzeug.security import (
-    generate_password_hash
-)
-
-from database import (
-    get_connection,
-    initialize_database
-)
+from database import get_connection, initialize_database
 
 from crypto_utils import (
     generate_rsa_key_pair,
@@ -17,94 +9,28 @@ from crypto_utils import (
     serialize_private_key,
     encrypt_private_key
 )
-
-
-# =========================================================
-# LOAD ENVIRONMENT VARIABLES
-# =========================================================
-
+import os
+from dotenv import load_dotenv
 load_dotenv()
-
 
 # =========================================================
 # INITIAL ADMIN CONFIGURATION
-#
+# =========================================================
+
+ORGANIZATION_NAME = os.getenv("ORGANIZATION_NAME")
+
+ADMIN_USERNAME = os.getenv("ADMIN_USERNAME")
+
+# Use the same Gmail address that you configured
+# as MAIL_USERNAME and MAIL_DEFAULT_SENDER.
+ADMIN_EMAIL = os.getenv("ADMIN_EMAIL")
+
 # IMPORTANT:
-# Keep these values in .env locally and in your deployment
-# environment variables in production.
+# Put your SecureShare login password here.
 #
-# Do NOT put real passwords directly in this Python file.
-# =========================================================
-
-ORGANIZATION_NAME = os.getenv(
-    "ORGANIZATION_NAME"
-)
-
-ADMIN_USERNAME = os.getenv(
-    "ADMIN_USERNAME"
-)
-
-ADMIN_EMAIL = os.getenv(
-    "ADMIN_EMAIL"
-)
-
-ADMIN_PASSWORD = os.getenv(
-    "ADMIN_PASSWORD"
-)
-
-
-# =========================================================
-# VALIDATE CONFIGURATION
-# =========================================================
-
-def validate_admin_configuration():
-
-    missing_variables = []
-
-    if not ORGANIZATION_NAME:
-        missing_variables.append(
-            "ORGANIZATION_NAME"
-        )
-
-    if not ADMIN_USERNAME:
-        missing_variables.append(
-            "ADMIN_USERNAME"
-        )
-
-    if not ADMIN_EMAIL:
-        missing_variables.append(
-            "ADMIN_EMAIL"
-        )
-
-    if not ADMIN_PASSWORD:
-        missing_variables.append(
-            "ADMIN_PASSWORD"
-        )
-
-    if missing_variables:
-
-        print()
-
-        print(
-            "ERROR: Missing environment variables:"
-        )
-
-        for variable in missing_variables:
-
-            print(
-                f"- {variable}"
-            )
-
-        print()
-
-        print(
-            "Please configure these values in your .env "
-            "file or deployment environment."
-        )
-
-        return False
-
-    return True
+# This is NOT your Gmail password.
+# It can be a completely different password.
+ADMIN_PASSWORD = os.getenv("ADMIN_EMAIL")
 
 
 # =========================================================
@@ -113,18 +39,7 @@ def validate_admin_configuration():
 
 def create_initial_admin():
 
-    # -----------------------------------------------------
-    # CHECK ENVIRONMENT VARIABLES FIRST
-    # -----------------------------------------------------
-
-    if not validate_admin_configuration():
-
-        return
-
-    # -----------------------------------------------------
-    # MAKE SURE DATABASE AND TABLES EXIST
-    # -----------------------------------------------------
-
+    # Make sure the database and all tables exist
     initialize_database()
 
     connection = get_connection()
@@ -168,6 +83,7 @@ def create_initial_admin():
                 "Organization created successfully."
             )
 
+
         # -------------------------------------------------
         # CHECK WHETHER ADMIN ALREADY EXISTS
         # -------------------------------------------------
@@ -187,20 +103,14 @@ def create_initial_admin():
 
         if existing_admin:
 
-            connection.commit()
-
             print()
-
             print(
                 "An account with this username or email "
                 "already exists."
             )
 
-            print(
-                "No new admin account was created."
-            )
-
             return
+
 
         # -------------------------------------------------
         # GENERATE RSA KEY PAIR
@@ -210,8 +120,9 @@ def create_initial_admin():
             generate_rsa_key_pair()
         )
 
+
         # -------------------------------------------------
-        # SERIALIZE PUBLIC KEY
+        # SERIALIZE THE PUBLIC KEY
         # -------------------------------------------------
 
         public_key_pem = (
@@ -220,8 +131,9 @@ def create_initial_admin():
             )
         )
 
+
         # -------------------------------------------------
-        # SERIALIZE AND ENCRYPT PRIVATE KEY
+        # SERIALIZE AND ENCRYPT THE PRIVATE KEY
         # -------------------------------------------------
 
         private_key_pem = (
@@ -237,8 +149,9 @@ def create_initial_admin():
             )
         )
 
+
         # -------------------------------------------------
-        # HASH ADMIN PASSWORD
+        # HASH THE ADMIN PASSWORD
         # -------------------------------------------------
 
         password_hash = (
@@ -247,8 +160,9 @@ def create_initial_admin():
             )
         )
 
+
         # -------------------------------------------------
-        # CREATE ADMIN ACCOUNT
+        # CREATE THE ADMIN ACCOUNT
         # -------------------------------------------------
 
         connection.execute(
@@ -279,12 +193,12 @@ def create_initial_admin():
 
         connection.commit()
 
+
         # -------------------------------------------------
         # SUCCESS MESSAGE
         # -------------------------------------------------
 
         print()
-
         print(
             "========================================"
         )
@@ -310,30 +224,30 @@ def create_initial_admin():
         )
 
         print()
-
         print(
-            "Database setup completed successfully."
+            "You can now start SecureShare using:"
         )
 
         print(
-            "You can now start SecureShare."
+            "python app.py"
         )
 
         print(
             "========================================"
         )
 
+
     except Exception as error:
 
         connection.rollback()
 
         print()
-
         print(
             "ERROR WHILE CREATING ADMIN:"
         )
 
         print(error)
+
 
     finally:
 

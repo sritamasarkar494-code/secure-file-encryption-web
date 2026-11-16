@@ -1,193 +1,8 @@
-import os
 import sqlite3
-from dotenv import load_dotenv
+import os
 
 
-# =========================================================
-# LOAD ENVIRONMENT VARIABLES
-# =========================================================
-
-load_dotenv()
-
-
-# =========================================================
-# DATABASE CONFIGURATION
-#
-# Local development:
-# DATABASE_TYPE=sqlite
-#
-# MySQL testing / deployment:
-# DATABASE_TYPE=mysql
-# =========================================================
-
-DATABASE_TYPE = os.getenv(
-    "DATABASE_TYPE",
-    "sqlite"
-).lower()
-
-SQLITE_DATABASE = os.getenv(
-    "SQLITE_DATABASE",
-    "instance/secure_files.db"
-)
-
-
-# =========================================================
-# MYSQL IMPORT
-#
-# mysql-connector-python is only required when you use
-# DATABASE_TYPE=mysql.
-# =========================================================
-
-try:
-
-    import mysql.connector
-    MYSQL_AVAILABLE = True
-
-except ImportError:
-
-    MYSQL_AVAILABLE = True
-
-
-# =========================================================
-# MYSQL ROW
-#
-# Allows MySQL rows to behave similarly to sqlite3.Row.
-# =========================================================
-
-class MySQLRow(dict):
-
-    def __getitem__(self, key):
-
-        return super().__getitem__(key)
-
-
-# =========================================================
-# MYSQL CURSOR WRAPPER
-#
-# Gives MySQL cursor behaviour similar to SQLite.
-# =========================================================
-
-class MySQLCursorWrapper:
-
-    def __init__(self, cursor):
-
-        self.cursor = cursor
-
-    @property
-    def lastrowid(self):
-
-        return self.cursor.lastrowid
-
-    def fetchone(self):
-
-        row = self.cursor.fetchone()
-
-        if row is None:
-
-            return None
-
-        return MySQLRow(row)
-
-    def fetchall(self):
-
-        rows = self.cursor.fetchall()
-
-        return [
-            MySQLRow(row)
-            for row in rows
-        ]
-
-
-# =========================================================
-# MYSQL CONNECTION WRAPPER
-#
-# Your app.py can continue using:
-#
-# connection.execute(
-#     "SELECT ... WHERE id = ?",
-#     (value,)
-# )
-#
-# This wrapper converts SQLite-style syntax to MySQL.
-# =========================================================
-
-class MySQLConnectionWrapper:
-
-    def __init__(self, connection):
-
-        self.connection = connection
-
-    def _convert_query(self, query):
-
-        # -------------------------------------------------
-        # Convert SQLite INSERT OR IGNORE to MySQL syntax.
-        # -------------------------------------------------
-
-        query = query.replace(
-            "INSERT OR IGNORE",
-            "INSERT IGNORE"
-        )
-
-        # -------------------------------------------------
-        # Convert SQLite placeholders:
-        #
-        # SQLite: ?
-        # MySQL:  %s
-        # -------------------------------------------------
-
-        query = query.replace(
-            "?",
-            "%s"
-        )
-
-        return query
-
-    def execute(
-        self,
-        query,
-        parameters=None
-    ):
-
-        converted_query = (
-            self._convert_query(query)
-        )
-
-        cursor = self.connection.cursor(
-            dictionary=True
-        )
-
-        if parameters is None:
-
-            cursor.execute(
-                converted_query
-            )
-
-        else:
-
-            cursor.execute(
-                converted_query,
-                parameters
-            )
-
-        return MySQLCursorWrapper(cursor)
-
-    def cursor(self):
-
-        return self.connection.cursor(
-            dictionary=True
-        )
-
-    def commit(self):
-
-        self.connection.commit()
-
-    def rollback(self):
-
-        self.connection.rollback()
-
-    def close(self):
-
-        self.connection.close()
+DATABASE = "instance/secure_files.db"
 
 
 # =========================================================
@@ -196,108 +11,22 @@ class MySQLConnectionWrapper:
 
 def get_connection():
 
-    # =====================================================
-    # SQLITE MODE
-    # =====================================================
+    os.makedirs("instance", exist_ok=True)
 
-    if DATABASE_TYPE == "sqlite":
+    connection = sqlite3.connect(DATABASE)
 
-        database_directory = os.path.dirname(
-            SQLITE_DATABASE
-        )
+    connection.row_factory = sqlite3.Row
 
-        if database_directory:
+    connection.execute("PRAGMA foreign_keys = ON")
 
-            os.makedirs(
-                database_directory,
-                exist_ok=True
-            )
-
-        connection = sqlite3.connect(
-            SQLITE_DATABASE
-        )
-
-        connection.row_factory = sqlite3.Row
-
-        connection.execute(
-            "PRAGMA foreign_keys = ON"
-        )
-
-        return connection
-
-    # =====================================================
-    # MYSQL MODE
-    # =====================================================
-
-    if DATABASE_TYPE == "mysql":
-
-        try:
-
-            import mysql.connector
-
-        except ImportError:
-
-            raise ImportError(
-                "MySQL support requires "
-                "mysql-connector-python. "
-                "Install it using: "
-                "pip install mysql-connector-python"
-            )
-
-        connection = mysql.connector.connect(
-
-            host=os.getenv(
-                "MYSQL_HOST",
-                "localhost"
-            ),
-
-            port=int(
-                os.getenv(
-                    "MYSQL_PORT",
-                    "3306"
-                )
-            ),
-
-            user=os.getenv(
-                "MYSQL_USER"
-            ),
-
-            password=os.getenv(
-                "MYSQL_PASSWORD"
-            ),
-
-            database=os.getenv(
-                "MYSQL_DATABASE"
-            ),
-
-            autocommit=False
-        )
-
-        return MySQLConnectionWrapper(
-            connection
-        )
-
-    # =====================================================
-    # INVALID DATABASE TYPE
-    # =====================================================
-
-    raise ValueError(
-        "Invalid DATABASE_TYPE. "
-        "Use either 'sqlite' or 'mysql'."
-    )
+    return connection
 
 
 # =========================================================
-# SQLITE DATABASE MIGRATION HELPERS
-#
-# These are used only for your existing SQLite database.
+# DATABASE MIGRATION HELPERS
 # =========================================================
 
-def sqlite_column_exists(
-    connection,
-    table_name,
-    column_name
-):
+def column_exists(connection, table_name, column_name):
 
     columns = connection.execute(
         f"PRAGMA table_info({table_name})"
@@ -309,14 +38,14 @@ def sqlite_column_exists(
     )
 
 
-def sqlite_add_column_if_missing(
+def add_column_if_missing(
     connection,
     table_name,
     column_name,
     column_definition
 ):
 
-    if not sqlite_column_exists(
+    if not column_exists(
         connection,
         table_name,
         column_name
@@ -332,282 +61,10 @@ def sqlite_add_column_if_missing(
 
 
 # =========================================================
-# MYSQL DATABASE INITIALIZATION
+# INITIALIZE DATABASE
 # =========================================================
 
-def initialize_mysql_database():
-
-    connection = get_connection()
-
-    try:
-
-        # =================================================
-        # ORGANIZATIONS
-        # =================================================
-
-        connection.execute("""
-            CREATE TABLE IF NOT EXISTS organizations (
-
-                id INT AUTO_INCREMENT PRIMARY KEY,
-
-                name VARCHAR(255)
-                UNIQUE NOT NULL,
-
-                created_at TIMESTAMP
-                DEFAULT CURRENT_TIMESTAMP
-            )
-        """)
-
-        # =================================================
-        # USERS
-        # =================================================
-
-        connection.execute("""
-            CREATE TABLE IF NOT EXISTS users (
-
-                id INT AUTO_INCREMENT PRIMARY KEY,
-
-                username VARCHAR(255)
-                UNIQUE NOT NULL,
-
-                email VARCHAR(255)
-                UNIQUE NOT NULL,
-
-                password_hash TEXT NOT NULL,
-
-                account_type VARCHAR(50)
-                NOT NULL,
-
-                role VARCHAR(50)
-                NOT NULL,
-
-                organization_id INT NULL,
-
-                public_key LONGBLOB NOT NULL,
-
-                encrypted_private_key LONGBLOB
-                NOT NULL,
-
-                failed_login_attempts INT
-                NOT NULL DEFAULT 0,
-
-                locked_until VARCHAR(50)
-                NULL,
-
-                created_at TIMESTAMP
-                DEFAULT CURRENT_TIMESTAMP,
-
-                FOREIGN KEY (organization_id)
-                REFERENCES organizations(id)
-                ON DELETE SET NULL
-            )
-        """)
-
-        # =================================================
-        # ORGANIZATION INVITATIONS
-        # =================================================
-
-        connection.execute("""
-            CREATE TABLE IF NOT EXISTS invitations (
-
-                id INT AUTO_INCREMENT PRIMARY KEY,
-
-                organization_id INT NOT NULL,
-
-                email VARCHAR(255)
-                NOT NULL,
-
-                token VARCHAR(255)
-                UNIQUE NOT NULL,
-
-                invited_by INT NOT NULL,
-
-                expires_at VARCHAR(50)
-                NOT NULL,
-
-                used_at VARCHAR(50)
-                NULL,
-
-                created_at TIMESTAMP
-                DEFAULT CURRENT_TIMESTAMP,
-
-                FOREIGN KEY (organization_id)
-                REFERENCES organizations(id),
-
-                FOREIGN KEY (invited_by)
-                REFERENCES users(id)
-            )
-        """)
-
-        # =================================================
-        # EXTERNAL INVITATIONS
-        # =================================================
-
-        connection.execute("""
-            CREATE TABLE IF NOT EXISTS
-            external_invitations (
-
-                id INT AUTO_INCREMENT PRIMARY KEY,
-
-                email VARCHAR(255)
-                NOT NULL,
-
-                token VARCHAR(255)
-                UNIQUE NOT NULL,
-
-                invited_by INT NOT NULL,
-
-                expires_at VARCHAR(50)
-                NOT NULL,
-
-                used_at VARCHAR(50)
-                NULL,
-
-                created_at TIMESTAMP
-                DEFAULT CURRENT_TIMESTAMP,
-
-                FOREIGN KEY (invited_by)
-                REFERENCES users(id)
-            )
-        """)
-
-        # =================================================
-        # FILES
-        # =================================================
-
-        connection.execute("""
-            CREATE TABLE IF NOT EXISTS files (
-
-                id INT AUTO_INCREMENT PRIMARY KEY,
-
-                owner_id INT NOT NULL,
-
-                organization_id INT NULL,
-
-                workspace_type VARCHAR(50)
-                NOT NULL DEFAULT 'personal',
-
-                original_filename TEXT NOT NULL,
-
-                stored_filename VARCHAR(255)
-                NOT NULL,
-
-                expiry_date VARCHAR(50)
-                NULL,
-
-                created_at TIMESTAMP
-                DEFAULT CURRENT_TIMESTAMP,
-
-                FOREIGN KEY (owner_id)
-                REFERENCES users(id),
-
-                FOREIGN KEY (organization_id)
-                REFERENCES organizations(id)
-            )
-        """)
-
-        # =================================================
-        # FILE ACCESS
-        # =================================================
-
-        connection.execute("""
-            CREATE TABLE IF NOT EXISTS file_access (
-
-                id INT AUTO_INCREMENT PRIMARY KEY,
-
-                file_id INT NOT NULL,
-
-                user_id INT NOT NULL,
-
-                encrypted_aes_key LONGBLOB
-                NOT NULL,
-
-                FOREIGN KEY (file_id)
-                REFERENCES files(id)
-                ON DELETE CASCADE,
-
-                FOREIGN KEY (user_id)
-                REFERENCES users(id)
-                ON DELETE CASCADE,
-
-                UNIQUE(file_id, user_id)
-            )
-        """)
-
-        # =================================================
-        # PENDING FILE SHARES
-        # =================================================
-
-        connection.execute("""
-            CREATE TABLE IF NOT EXISTS
-            pending_file_shares (
-
-                id INT AUTO_INCREMENT PRIMARY KEY,
-
-                file_id INT NOT NULL,
-
-                recipient_email VARCHAR(255)
-                NOT NULL,
-
-                encrypted_aes_key LONGBLOB
-                NOT NULL,
-
-                created_at TIMESTAMP
-                DEFAULT CURRENT_TIMESTAMP,
-
-                FOREIGN KEY (file_id)
-                REFERENCES files(id)
-                ON DELETE CASCADE,
-
-                UNIQUE(file_id, recipient_email)
-            )
-        """)
-
-        # =================================================
-        # AUDIT LOGS
-        # =================================================
-
-        connection.execute("""
-            CREATE TABLE IF NOT EXISTS audit_logs (
-
-                id INT AUTO_INCREMENT PRIMARY KEY,
-
-                user_id INT NULL,
-
-                organization_id INT NULL,
-
-                action VARCHAR(100)
-                NOT NULL,
-
-                details TEXT,
-
-                created_at TIMESTAMP
-                DEFAULT CURRENT_TIMESTAMP,
-
-                FOREIGN KEY (user_id)
-                REFERENCES users(id)
-                ON DELETE SET NULL,
-
-                FOREIGN KEY (organization_id)
-                REFERENCES organizations(id)
-                ON DELETE SET NULL
-            )
-        """)
-
-        connection.commit()
-
-    finally:
-
-        connection.close()
-
-
-# =========================================================
-# SQLITE DATABASE INITIALIZATION
-#
-# This preserves your existing SQLite structure and data.
-# =========================================================
-
-def initialize_sqlite_database():
+def initialize_database():
 
     connection = get_connection()
 
@@ -629,6 +86,14 @@ def initialize_sqlite_database():
 
     # =====================================================
     # USERS
+    #
+    # An organization employee can use BOTH:
+    #
+    # - Organization Workspace
+    # - Personal Workspace
+    #
+    # account_type describes how the account was created.
+    # It does not restrict personal workspace access.
     # =====================================================
 
     cursor.execute("""
@@ -665,6 +130,9 @@ def initialize_sqlite_database():
 
     # =====================================================
     # ORGANIZATION INVITATIONS
+    #
+    # Used by organization administrators to invite
+    # employees to join their organization.
     # =====================================================
 
     cursor.execute("""
@@ -694,7 +162,10 @@ def initialize_sqlite_database():
     """)
 
     # =====================================================
-    # EXTERNAL INVITATIONS
+    # PERSONAL / EXTERNAL INVITATIONS
+    #
+    # Used when someone wants to share a PERSONAL file
+    # with a recipient who does not yet have an account.
     # =====================================================
 
     cursor.execute("""
@@ -720,6 +191,16 @@ def initialize_sqlite_database():
 
     # =====================================================
     # FILES
+    #
+    # workspace_type:
+    #
+    # organization -> company file
+    # personal     -> user's private file
+    #
+    # IMPORTANT:
+    # Personal files always have organization_id = NULL.
+    # Therefore organization administrators cannot access
+    # or view personal files through organization queries.
     # =====================================================
 
     cursor.execute("""
@@ -749,8 +230,8 @@ def initialize_sqlite_database():
         )
     """)
 
-    # Preserve compatibility with an older SQLite database.
-    sqlite_add_column_if_missing(
+    # Add workspace_type for older databases
+    add_column_if_missing(
         connection,
         "files",
         "workspace_type",
@@ -759,6 +240,9 @@ def initialize_sqlite_database():
 
     # =====================================================
     # FILE ACCESS
+    #
+    # Stores the encrypted AES key separately for every
+    # user who has access to a file.
     # =====================================================
 
     cursor.execute("""
@@ -783,6 +267,23 @@ def initialize_sqlite_database():
 
     # =====================================================
     # PENDING FILE SHARES
+    #
+    # This table supports the following flow:
+    #
+    # 1. User uploads a personal file.
+    # 2. Recipient does not have an account.
+    # 3. File is encrypted and stored immediately.
+    # 4. Recipient receives an invitation.
+    # 5. This table remembers which file was intended for
+    #    which email address.
+    # 6. When the invited person registers with that email,
+    #    access to the file is automatically created.
+    #
+    # The encrypted AES key is stored here because the
+    # recipient does not yet have a public key at upload
+    # time. After registration, their new public key can
+    # be used to encrypt the AES key and create a record
+    # in file_access.
     # =====================================================
 
     cursor.execute("""
@@ -792,7 +293,6 @@ def initialize_sqlite_database():
             file_id INTEGER NOT NULL,
 
             recipient_email TEXT NOT NULL,
-
             encrypted_aes_key BLOB NOT NULL,
 
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
@@ -806,6 +306,15 @@ def initialize_sqlite_database():
 
     # =====================================================
     # AUDIT LOGS
+    #
+    # Organization actions:
+    # organization_id = organization ID
+    #
+    # Personal actions:
+    # organization_id = NULL
+    #
+    # Therefore organization administrators only see
+    # organization-related activity.
     # =====================================================
 
     cursor.execute("""
@@ -832,6 +341,12 @@ def initialize_sqlite_database():
 
     # =====================================================
     # UPDATE OLD FILE RECORDS
+    #
+    # Existing files with an organization ID are treated
+    # as organization files.
+    #
+    # Existing files without an organization ID are treated
+    # as personal files.
     # =====================================================
 
     connection.execute("""
@@ -854,35 +369,3 @@ def initialize_sqlite_database():
     connection.commit()
 
     connection.close()
-
-
-# =========================================================
-# MAIN DATABASE INITIALIZATION
-# =========================================================
-
-def initialize_database():
-
-    if DATABASE_TYPE == "sqlite":
-
-        print(
-            "Database mode: SQLite"
-        )
-
-        initialize_sqlite_database()
-
-        return
-
-    if DATABASE_TYPE == "mysql":
-
-        print(
-            "Database mode: MySQL"
-        )
-
-        initialize_mysql_database()
-
-        return
-
-    raise ValueError(
-        "Invalid DATABASE_TYPE. "
-        "Use 'sqlite' or 'mysql'."
-    )
